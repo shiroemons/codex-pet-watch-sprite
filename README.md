@@ -60,6 +60,8 @@ iOS / Watch のデモアプリでは、単純なランダム移動ではなく `
 
 エンジンは energy / curiosity / sociability と画面端への近さをもとに、探索、近場の確認、休憩、挨拶、ジャンプ、中央付近への復帰を重み付きで選びます。iOS デモでは右下の調整ボタンから `AI Behavior` をオン / オフできます。
 
+詳しい設計と UI 連携は [Behavior Engine](docs/BehaviorEngine.md) にまとめています。
+
 ## Display Presets
 
 iOS / Watch のデモアプリでは、細かい数値調整ではなくプリセットで見た目を変更できます。
