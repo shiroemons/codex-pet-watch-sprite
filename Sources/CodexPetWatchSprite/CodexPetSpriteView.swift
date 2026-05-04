@@ -2,7 +2,7 @@ import ImageIO
 import SwiftUI
 
 public struct CodexPetSpriteView: View {
-    public enum Animation: Int, CaseIterable, Equatable {
+    public enum Animation: Int, CaseIterable, Equatable, Hashable {
         case idle = 0
         case runningRight = 1
         case runningLeft = 2
@@ -12,6 +12,10 @@ public struct CodexPetSpriteView: View {
         case waiting = 6
         case running = 7
         case review = 8
+
+        public var frameCount: Int {
+            durations.count
+        }
 
         var durations: [TimeInterval] {
             switch self {
@@ -37,21 +41,27 @@ public struct CodexPetSpriteView: View {
 
     private let animation: Animation
     private let scale: CGFloat
+    private let durationScale: TimeInterval
+    private let fixedFrameIndex: Int?
     private let resourceName: String
     private let resourceExtension: String
     private let bundle: Bundle
 
-    @State private var frames: [CGImage] = []
+    @State private var frameCache: [Animation: [CGImage]] = [:]
 
     public init(
         animation: Animation = .idle,
         scale: CGFloat = 1,
+        durationScale: TimeInterval = 1,
+        fixedFrameIndex: Int? = nil,
         resourceName: String = "spritesheet",
-        resourceExtension: String = "webp",
+        resourceExtension: String = "png",
         bundle: Bundle? = nil
     ) {
         self.animation = animation
         self.scale = scale
+        self.durationScale = max(durationScale, 0.1)
+        self.fixedFrameIndex = fixedFrameIndex
         self.resourceName = resourceName
         self.resourceExtension = resourceExtension
         self.bundle = bundle ?? .module
@@ -70,18 +80,22 @@ public struct CodexPetSpriteView: View {
             }
         }
         .onAppear(perform: loadFrames)
-        .onChange(of: animation) { _ in
-            loadFrames()
-        }
         .accessibilityHidden(true)
     }
 
     private func frame(at date: Date) -> CGImage? {
-        guard !frames.isEmpty else {
+        guard
+            let frames = frameCache[animation],
+            !frames.isEmpty
+        else {
             return nil
         }
 
-        let durations = animation.durations
+        if let fixedFrameIndex {
+            return frames[min(max(fixedFrameIndex, 0), frames.count - 1)]
+        }
+
+        let durations = animation.durations.map { $0 * durationScale }
         let totalDuration = durations.reduce(0, +)
         var cursor = date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: totalDuration)
 
@@ -97,25 +111,44 @@ public struct CodexPetSpriteView: View {
 
     private func loadFrames() {
         guard
-            let url = bundle.url(forResource: resourceName, withExtension: resourceExtension),
+            let url = spriteSheetURL(),
             let source = CGImageSourceCreateWithURL(url as CFURL, nil),
             let sheet = CGImageSourceCreateImageAtIndex(source, 0, nil)
         else {
-            assertionFailure("Could not load \(resourceName).\(resourceExtension).")
-            frames = []
+            frameCache = [:]
             return
         }
 
-        frames = animation.durations.indices.compactMap { column in
-            let rect = CGRect(
-                x: CGFloat(column) * Self.cellWidth,
-                y: CGFloat(animation.rawValue) * Self.cellHeight,
-                width: Self.cellWidth,
-                height: Self.cellHeight
-            )
+        frameCache = Dictionary(uniqueKeysWithValues: Animation.allCases.map { animation in
+            let frames = animation.durations.indices.compactMap { column in
+                let rect = CGRect(
+                    x: CGFloat(column) * Self.cellWidth,
+                    y: CGFloat(animation.rawValue) * Self.cellHeight,
+                    width: Self.cellWidth,
+                    height: Self.cellHeight
+                )
 
-            return sheet.cropping(to: rect)
+                return sheet.cropping(to: rect)
+            }
+
+            return (animation, frames)
         }
+        )
+    }
+
+    private func spriteSheetURL() -> URL? {
+        var extensions: [String] = []
+        for resourceExtension in [resourceExtension, "png", "webp"] where !extensions.contains(resourceExtension) {
+            extensions.append(resourceExtension)
+        }
+
+        for resourceExtension in extensions {
+            if let url = bundle.url(forResource: resourceName, withExtension: resourceExtension) {
+                return url
+            }
+        }
+
+        return nil
     }
 
     private static let cellWidth: CGFloat = 192

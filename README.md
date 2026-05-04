@@ -39,7 +39,7 @@ Apple Watch では `scale: 0.35` から `0.6` 程度が扱いやすいサイズ�
 
 ## Sprite Sheet Format
 
-このパッケージに同梱している `spritesheet.webp` は Codex pets 形式です。
+このパッケージに同梱している `spritesheet.png` / `spritesheet.webp` は Codex pets 形式です。watchOS では PNG を優先して読み込みます。
 
 - atlas: `1536 x 1872`
 - grid: `8 columns x 9 rows`
