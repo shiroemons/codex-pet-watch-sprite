@@ -91,6 +91,19 @@ public struct Decision: Equatable {
 
 `nextMovementDecision` は UI の「移動」操作向けで、通常の重み付けを使わず、見た目に分かりやすい横断移動を返します。
 
+## Overview
+
+```mermaid
+flowchart LR
+    UI["iOS / Watch UI<br/>timer or manual action"] --> Engine["CodexPetBehaviorEngine"]
+    Engine --> Needs["Internal needs<br/>energy / curiosity / sociability"]
+    Engine --> Bounds["Movement bounds<br/>container / pet / reserved area"]
+    Engine --> Intent["Intent selection"]
+    Intent --> Decision["Decision<br/>animation / targetPosition / duration"]
+    Decision --> Sprite["CodexPetSpriteView"]
+    Decision --> Motion["SwiftUI position animation"]
+```
+
 ## Decision Flow
 
 `nextDecision` の流れは次の通りです。
@@ -103,6 +116,29 @@ public struct Decision: Equatable {
 6. `edgePressure > 0.82` の場合は中央付近へ戻す
 7. それ以外は重み付き抽選で intent を選ぶ
 8. intent を移動または静止の `Decision` に変換する
+
+```mermaid
+flowchart TD
+    Start["nextDecision(...)"] --> Bounds["movementBounds(...)"]
+    Bounds --> BoundsValid{"bounds.width > 1<br/>and bounds.height > 1"}
+    BoundsValid -->|No| Rest["stationaryDecision(.rest)"]
+    BoundsValid -->|Yes| Needs["updateNeeds()"]
+    Needs --> Clamp["Clamp currentPosition into bounds"]
+    Clamp --> Edge["edgePressure(for:in:)"]
+    Edge --> TooClose{"edgePressure<br/>greater than 0.82"}
+    TooClose -->|Yes| ReturnMove["movementDecision<br/>to center-biased point"]
+    TooClose -->|No| Choose["chooseIntent(edgePressure:)"]
+    Choose --> Intent{"Intent"}
+    Intent -->|returnToComfortZone| ReturnMove
+    Intent -->|explore| Explore["Move to focusPoint<br/>or random point"]
+    Intent -->|inspect| Inspect["Move to nearby point"]
+    Intent -->|rest / greet / celebrate| Stationary["stationaryDecision(intent:)"]
+    Explore --> MoveDecision["Decision with targetPosition"]
+    Inspect --> MoveDecision
+    ReturnMove --> MoveDecision
+    Stationary --> StillDecision["Decision without targetPosition"]
+    Rest --> StillDecision
+```
 
 ## Weighting
 
@@ -161,6 +197,30 @@ public struct Decision: Equatable {
 | `returnToComfortZone` / `explore` fallback | `idle` | `1.2` | no direct change |
 
 静止が 3 回以上続くと `curiosity` が追加で回復し、次回以降に動きやすくなります。
+
+## State Updates
+
+```mermaid
+flowchart LR
+    Tick["Every decision tick"] --> Recover["Recover needs<br/>energy + 0.04...0.09<br/>curiosity + 0.03...0.08<br/>sociability + 0.02...0.06"]
+    Recover --> Path{"Decision type"}
+
+    Path -->|Movement| MoveState["stationaryStreak = 0<br/>movementStreak += 1<br/>energy -= 0.22<br/>curiosity -= 0.24 for explore<br/>curiosity -= 0.12 otherwise"]
+    MoveState --> MoveAnim{"Horizontal delta"}
+    MoveAnim -->|less than -4pt| Left["runningLeft"]
+    MoveAnim -->|greater than 4pt| Right["runningRight"]
+    MoveAnim -->|near vertical| Facing["previous facingAnimation"]
+
+    Path -->|Stationary| StillState["stationaryStreak += 1<br/>movementStreak = 0"]
+    StillState --> StillIntent{"Intent"}
+    StillIntent -->|rest| RestState["energy += 0.18<br/>waiting or idle"]
+    StillIntent -->|greet| GreetState["sociability -= 0.35<br/>waving"]
+    StillIntent -->|celebrate| CelebrateState["energy -= 0.16<br/>jumping"]
+    StillIntent -->|inspect| InspectState["curiosity -= 0.14<br/>review"]
+    StillState --> Curious{"stationaryStreak >= 3"}
+    Curious -->|Yes| CuriosityBoost["curiosity += 0.22"]
+    Curious -->|No| Done["Return Decision"]
+```
 
 ## UI Integration
 
