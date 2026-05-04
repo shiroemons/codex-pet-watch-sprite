@@ -6,7 +6,9 @@ Codex pets の `8 x 9` スプライトシートを iOS / watchOS の SwiftUI で
 
 - iOS 15+
 - watchOS 8+
-- Swift 5.9+
+- Swift 6.3+
+
+このパッケージは Swift 6 言語モードでビルドします。Xcode プロジェクト側も `SWIFT_VERSION = 6.0` に設定しています。
 
 ## Usage
 
@@ -78,3 +80,16 @@ iOS / Watch のデモアプリでは、細かい数値調整ではなくプリ�
 ## Petdex Gallery
 
 iOS デモアプリには Petdex manifest (`https://petdex.crafter.run/api/manifest`) から一覧を取得し、選択した pet の `spritesheetUrl` をアプリ内キャッシュへ保存して表示するギャラリーを入れています。右下の調整ボタンから `Petdex Gallery` を押すと、別画面で検索とインストールができます。
+
+## Development
+
+テストは Swift Testing で実装しています。
+
+```sh
+swift test
+```
+
+iOS / watchOS のデモアプリは Xcode の以下の scheme で確認できます。
+
+- `Codex Pet`
+- `Codex Pet Watch App`
