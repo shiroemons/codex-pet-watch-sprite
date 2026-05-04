@@ -22,7 +22,7 @@ public struct CodexPetSpriteView: View {
             case .idle:
                 return [0.280, 0.110, 0.110, 0.140, 0.140, 0.320]
             case .runningRight, .runningLeft:
-                return [0.120, 0.120, 0.120, 0.120, 0.120, 0.120, 0.120, 0.220]
+                return [0.115, 0.115, 0.115, 0.115, 0.115, 0.115, 0.115, 0.115]
             case .waving:
                 return [0.140, 0.140, 0.140, 0.280]
             case .jumping:
@@ -35,6 +35,17 @@ public struct CodexPetSpriteView: View {
                 return [0.120, 0.120, 0.120, 0.120, 0.120, 0.220]
             case .review:
                 return [0.150, 0.150, 0.150, 0.150, 0.150, 0.280]
+            }
+        }
+
+        var playbackFrameIndices: [Int] {
+            switch self {
+            case .runningRight, .runningLeft:
+                return [0, 4, 1, 5, 2, 6, 3, 7]
+            case .running:
+                return [0, 3, 1, 4, 2, 5]
+            case .idle, .waving, .jumping, .failed, .waiting, .review:
+                return Array(0..<frameCount)
             }
         }
     }
@@ -105,10 +116,12 @@ public struct CodexPetSpriteView: View {
         let totalDuration = durations.reduce(0, +)
         var cursor = date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: totalDuration)
 
+        let frameIndices = animation.playbackFrameIndices
         for index in durations.indices {
             cursor -= durations[index]
             if cursor <= 0 {
-                return frames[min(index, frames.count - 1)]
+                let frameIndex = frameIndices[min(index, frameIndices.count - 1)]
+                return frames[min(frameIndex, frames.count - 1)]
             }
         }
 

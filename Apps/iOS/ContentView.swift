@@ -4,13 +4,15 @@ import SwiftUI
 struct ContentView: View {
     @State private var selectedAnimation: CodexPetSpriteView.Animation = .idle
     @State private var petPosition: CGPoint = .zero
-    @State private var playbackSpeed = 0.55
-    @State private var petScale = 1.25
+    @AppStorage("codexPetAnimationSpeedPreset") private var animationSpeedPresetRawValue = CodexPetAnimationSpeedPreset.natural.rawValue
+    @AppStorage("codexPetSizePreset") private var sizePresetRawValue = CodexPetSizePreset.medium.rawValue
     @State private var isFrameFixed = false
     @State private var selectedFrame = 0
     @State private var showsControls = false
-    @State private var isRandomMovementEnabled = true
-    @State private var randomMovementAnimation: CodexPetSpriteView.Animation?
+    @State private var isIntelligentBehaviorEnabled = true
+    @State private var behaviorAnimation: CodexPetSpriteView.Animation?
+    @State private var behaviorEngine = CodexPetBehaviorEngine()
+    @State private var behaviorToken = UUID()
     @State private var petdexPets: [PetdexPet] = []
     @State private var petdexStatusMessage = "Petdex gallery is not loaded."
     @State private var installedPetSlug: String?
@@ -20,9 +22,31 @@ struct ContentView: View {
     @State private var controlHideToken = UUID()
     @GestureState private var dragState: PetDragState?
 
-    private let randomMoveDuration = 1.2
-    private let randomMoveTimer = Timer.publish(every: 2.4, on: .main, in: .common).autoconnect()
+    private let behaviorTimer = Timer.publish(every: 2.2, on: .main, in: .common).autoconnect()
     private let controlsAutoHideDelay = 8.0
+    private let basePetScale: CGFloat = 1.25
+
+    private var animationSpeedPreset: CodexPetAnimationSpeedPreset {
+        get {
+            CodexPetAnimationSpeedPreset(rawValue: animationSpeedPresetRawValue) ?? .natural
+        }
+        nonmutating set {
+            animationSpeedPresetRawValue = newValue.rawValue
+        }
+    }
+
+    private var sizePreset: CodexPetSizePreset {
+        get {
+            CodexPetSizePreset(rawValue: sizePresetRawValue) ?? .medium
+        }
+        nonmutating set {
+            sizePresetRawValue = newValue.rawValue
+        }
+    }
+
+    private var petScale: CGFloat {
+        sizePreset.scale(baseScale: basePetScale)
+    }
 
     private var petSize: CGSize {
         CGSize(width: 192 * petScale, height: 208 * petScale)
@@ -30,7 +54,7 @@ struct ContentView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let displayedAnimation = dragState?.animation ?? randomMovementAnimation ?? selectedAnimation
+            let displayedAnimation = dragState?.animation ?? behaviorAnimation ?? selectedAnimation
 
             ZStack {
                 Color.black
@@ -39,7 +63,7 @@ struct ContentView: View {
                 CodexPetSpriteView(
                     animation: displayedAnimation,
                     scale: petScale,
-                    durationScale: 1 / playbackSpeed,
+                    durationScale: animationSpeedPreset.durationScale(for: displayedAnimation),
                     fixedFrameIndex: fixedFrameIndex(for: displayedAnimation),
                     spriteSheetFileURL: installedSpriteSheetURL
                 )
@@ -55,8 +79,8 @@ struct ContentView: View {
                     petPosition = defaultPetPosition(in: geometry.size)
                 }
             }
-            .onReceive(randomMoveTimer) { _ in
-                moveRandomlyIfNeeded(in: geometry.size)
+            .onReceive(behaviorTimer) { _ in
+                performIntelligentBehaviorIfNeeded(in: geometry.size)
             }
         }
         .fullScreenCover(isPresented: $showsPetdexGallery) {
@@ -121,25 +145,9 @@ struct ContentView: View {
             petdexControls
 
             VStack(spacing: 8) {
-                controlSlider(
-                    title: "Speed",
-                    valueText: String(format: "%.2fx", playbackSpeed),
-                    value: $playbackSpeed,
-                    range: 0.25...2
-                )
-                .onChange(of: playbackSpeed) { _ in
-                    scheduleControlsAutoHide()
-                }
+                speedPresetPicker
 
-                controlSlider(
-                    title: "Size",
-                    valueText: String(format: "%.2fx", petScale),
-                    value: $petScale,
-                    range: 0.5...1.8
-                )
-                .onChange(of: petScale) { _ in
-                    scheduleControlsAutoHide()
-                }
+                sizePresetPicker
 
                 Toggle("Frame", isOn: $isFrameFixed)
                     .font(.caption)
@@ -159,11 +167,14 @@ struct ContentView: View {
                     }
                 }
 
-                Toggle("Random Move", isOn: $isRandomMovementEnabled)
+                Toggle("AI Behavior", isOn: $isIntelligentBehaviorEnabled)
                     .font(.caption)
-                    .onChange(of: isRandomMovementEnabled) { isEnabled in
+                    .onChange(of: isIntelligentBehaviorEnabled) { isEnabled in
                         if !isEnabled {
-                            randomMovementAnimation = nil
+                            behaviorToken = UUID()
+                            behaviorAnimation = nil
+                        } else {
+                            behaviorEngine.reset()
                         }
                         scheduleControlsAutoHide()
                     }
@@ -204,21 +215,41 @@ struct ContentView: View {
         .padding(.horizontal, 18)
     }
 
-    private func controlSlider(
-        title: String,
-        valueText: String,
-        value: Binding<Double>,
-        range: ClosedRange<Double>
-    ) -> some View {
-        VStack(spacing: 2) {
-            HStack {
-                Text(title)
-                Spacer()
-                Text(valueText)
+    private var speedPresetPicker: some View {
+        Picker("Speed", selection: speedPresetBinding) {
+            ForEach(CodexPetAnimationSpeedPreset.allCases) { preset in
+                Text(preset.title).tag(preset)
             }
-            .font(.caption)
+        }
+        .font(.caption)
+        .pickerStyle(.segmented)
+    }
 
-            Slider(value: value, in: range)
+    private var sizePresetPicker: some View {
+        Picker("Size", selection: sizePresetBinding) {
+            ForEach(CodexPetSizePreset.allCases) { preset in
+                Text(preset.title).tag(preset)
+            }
+        }
+        .font(.caption)
+        .pickerStyle(.segmented)
+    }
+
+    private var speedPresetBinding: Binding<CodexPetAnimationSpeedPreset> {
+        Binding {
+            animationSpeedPreset
+        } set: { preset in
+            animationSpeedPreset = preset
+            scheduleControlsAutoHide()
+        }
+    }
+
+    private var sizePresetBinding: Binding<CodexPetSizePreset> {
+        Binding {
+            sizePreset
+        } set: { preset in
+            sizePreset = preset
+            scheduleControlsAutoHide()
         }
     }
 
@@ -291,65 +322,42 @@ struct ContentView: View {
     }
 
     private func fixedFrameIndex(for animation: CodexPetSpriteView.Animation) -> Int? {
-        guard isFrameFixed, dragState == nil, randomMovementAnimation == nil else {
+        guard isFrameFixed, dragState == nil, behaviorAnimation == nil else {
             return nil
         }
 
         return min(selectedFrame, animation.frameCount - 1)
     }
 
-    private func moveRandomlyIfNeeded(in containerSize: CGSize) {
-        guard isRandomMovementEnabled, !isFrameFixed, dragState == nil else {
+    private func performIntelligentBehaviorIfNeeded(in containerSize: CGSize) {
+        guard isIntelligentBehaviorEnabled, !isFrameFixed, dragState == nil else {
             return
         }
 
-        guard Bool.random() else {
-            playRandomStationaryAnimation()
-            return
-        }
-
-        let currentPosition = currentPetPosition(in: containerSize, dragState: nil)
-        let nextPosition = randomPetPosition(in: containerSize)
-        randomMovementAnimation = nextPosition.x < currentPosition.x ? .runningLeft : .runningRight
-
-        withAnimation(.linear(duration: randomMoveDuration)) {
-            petPosition = nextPosition
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + randomMoveDuration) {
-            if isRandomMovementEnabled, dragState == nil {
-                randomMovementAnimation = nil
-            }
-        }
-    }
-
-    private func playRandomStationaryAnimation() {
-        randomMovementAnimation = [
-            .idle,
-            .waving,
-            .jumping,
-            .waiting,
-            .review
-        ].randomElement() ?? .idle
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
-            if isRandomMovementEnabled, dragState == nil {
-                randomMovementAnimation = nil
-            }
-        }
-    }
-
-    private func randomPetPosition(in containerSize: CGSize) -> CGPoint {
-        let minimumX = petSize.width / 2
-        let maximumX = max(minimumX, containerSize.width - petSize.width / 2)
-        let minimumY = petSize.height / 2
         let controlsHeight: CGFloat = showsControls ? 300 : 76
-        let maximumY = max(minimumY, containerSize.height - controlsHeight - petSize.height / 2)
-
-        return CGPoint(
-            x: CGFloat.random(in: minimumX...maximumX),
-            y: CGFloat.random(in: minimumY...maximumY)
+        let currentPosition = currentPetPosition(in: containerSize, dragState: nil)
+        let decision = behaviorEngine.nextDecision(
+            currentPosition: currentPosition,
+            containerSize: containerSize,
+            petSize: petSize,
+            bottomReservedHeight: controlsHeight
         )
+        let token = UUID()
+        behaviorToken = token
+        behaviorAnimation = decision.animation
+        let behaviorDuration = decision.duration * animationSpeedPreset.movementDurationScale
+
+        if let nextPosition = decision.targetPosition {
+            withAnimation(.linear(duration: behaviorDuration)) {
+                petPosition = nextPosition
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + behaviorDuration) {
+            if isIntelligentBehaviorEnabled, dragState == nil, behaviorToken == token {
+                behaviorAnimation = nil
+            }
+        }
     }
 
     private func defaultPetPosition(in containerSize: CGSize) -> CGPoint {

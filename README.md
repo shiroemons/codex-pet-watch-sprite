@@ -52,6 +52,19 @@ iPhone 経由で実機 Apple Watch に入れる場合は、Xcode で iOS 側の 
 - `running`
 - `review`
 
+## AI Behavior
+
+iOS / Watch のデモアプリでは、単純なランダム移動ではなく `CodexPetBehaviorEngine` で pet の行動を決めています。
+
+エンジンは energy / curiosity / sociability と画面端への近さをもとに、探索、近場の確認、休憩、挨拶、ジャンプ、中央付近への復帰を重み付きで選びます。iOS デモでは右下の調整ボタンから `AI Behavior` をオン / オフできます。
+
+## Display Presets
+
+iOS / Watch のデモアプリでは、細かい数値調整ではなくプリセットで見た目を変更できます。
+
+- `CodexPetAnimationSpeedPreset`: ゆっくり / 標準 / 元気。アニメーションごとに表示時間を調整し、走り・待機・ジャンプがそれぞれ自然な速度になるようにします。
+- `CodexPetSizePreset`: 極小 / 小 / 中 / 大 / 特大。各プラットフォームの基準サイズに対して、見やすい範囲でサイズを切り替えます。
+
 ## Sprite Sheet Format
 
 このパッケージに同梱している `spritesheet.png` / `spritesheet.webp` は Codex pets 形式です。watchOS では PNG を優先して読み込みます。
