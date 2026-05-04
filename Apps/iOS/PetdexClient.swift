@@ -43,7 +43,7 @@ enum PetdexClientError: LocalizedError {
     }
 }
 
-final class PetdexClient {
+final class PetdexClient: Sendable {
     static let shared = PetdexClient()
 
     private let manifestURL = URL(string: "https://petdex.crafter.run/api/manifest")!

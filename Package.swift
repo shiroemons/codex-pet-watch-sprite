@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.3
 
 import PackageDescription
 
@@ -26,5 +26,6 @@ let package = Package(
             name: "CodexPetWatchSpriteTests",
             dependencies: ["CodexPetWatchSprite"]
         )
-    ]
+    ],
+    swiftLanguageModes: [.v6]
 )

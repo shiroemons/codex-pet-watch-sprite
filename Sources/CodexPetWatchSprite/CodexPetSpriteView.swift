@@ -151,7 +151,7 @@ public struct CodexPetSpriteView: View {
         return nil
     }
 
-    public static let cellSize = CGSize(width: 192, height: 208)
+    nonisolated public static let cellSize = CGSize(width: 192, height: 208)
 }
 
 public struct CodexPetSpriteFrameView: View {
