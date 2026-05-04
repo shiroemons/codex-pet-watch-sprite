@@ -46,3 +46,7 @@ Apple Watch では `scale: 0.35` から `0.6` 程度が扱いやすいサイズ�
 - cell: `192 x 208`
 
 各行のアニメーション時間は `CodexPetSpriteView.Animation` に定義しています。
+
+## Petdex Gallery
+
+iOS デモアプリには Petdex manifest (`https://petdex.crafter.run/api/manifest`) から一覧を取得し、選択した pet の `spritesheetUrl` をアプリ内キャッシュへ保存して表示するギャラリーを入れています。右下の調整ボタンから `Petdex Gallery` を押すと、別画面で検索とインストールができます。

@@ -11,12 +11,18 @@ struct ContentView: View {
     @State private var showsControls = false
     @State private var isRandomMovementEnabled = true
     @State private var randomMovementAnimation: CodexPetSpriteView.Animation?
+    @State private var petdexPets: [PetdexPet] = []
+    @State private var petdexStatusMessage = "Petdex gallery is not loaded."
+    @State private var installedPetSlug: String?
+    @State private var installedPetName = "Local Sprite"
+    @State private var installedSpriteSheetURL: URL?
+    @State private var showsPetdexGallery = false
     @State private var controlHideToken = UUID()
     @GestureState private var dragState: PetDragState?
 
     private let randomMoveDuration = 1.2
     private let randomMoveTimer = Timer.publish(every: 2.4, on: .main, in: .common).autoconnect()
-    private let controlsAutoHideDelay = 3.0
+    private let controlsAutoHideDelay = 8.0
 
     private var petSize: CGSize {
         CGSize(width: 192 * petScale, height: 208 * petScale)
@@ -34,8 +40,10 @@ struct ContentView: View {
                     animation: displayedAnimation,
                     scale: petScale,
                     durationScale: 1 / playbackSpeed,
-                    fixedFrameIndex: fixedFrameIndex(for: displayedAnimation)
+                    fixedFrameIndex: fixedFrameIndex(for: displayedAnimation),
+                    spriteSheetFileURL: installedSpriteSheetURL
                 )
+                    .id(installedSpriteSheetURL?.path ?? "local-sprite")
                     .frame(width: petSize.width, height: petSize.height)
                     .position(currentPetPosition(in: geometry.size, dragState: dragState))
                     .gesture(petDragGesture(in: geometry.size))
@@ -50,6 +58,15 @@ struct ContentView: View {
             .onReceive(randomMoveTimer) { _ in
                 moveRandomlyIfNeeded(in: geometry.size)
             }
+        }
+        .fullScreenCover(isPresented: $showsPetdexGallery) {
+            PetdexGalleryView(
+                pets: $petdexPets,
+                installedPetSlug: $installedPetSlug,
+                installedPetName: $installedPetName,
+                installedSpriteSheetURL: $installedSpriteSheetURL,
+                statusMessage: $petdexStatusMessage
+            )
         }
     }
 
@@ -100,6 +117,8 @@ struct ContentView: View {
                 selectedFrame = min(selectedFrame, animation.frameCount - 1)
                 scheduleControlsAutoHide()
             }
+
+            petdexControls
 
             VStack(spacing: 8) {
                 controlSlider(
@@ -156,6 +175,33 @@ struct ContentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .frame(maxWidth: 420)
         .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+
+    private var petdexControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Label(installedPetName, systemImage: "person.crop.square")
+                    .font(.caption)
+                    .lineLimit(1)
+
+                Spacer()
+
+                Button {
+                    showsPetdexGallery = true
+                    scheduleControlsAutoHide()
+                } label: {
+                    Label("Petdex Gallery", systemImage: "square.grid.2x2")
+                        .labelStyle(.titleAndIcon)
+                }
+                .buttonStyle(.borderedProminent)
+            }
+
+            Text(petdexStatusMessage)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+        }
+        .padding(.horizontal, 18)
     }
 
     private func controlSlider(

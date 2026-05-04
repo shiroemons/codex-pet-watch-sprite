@@ -13,6 +13,8 @@
 		111111111111111111111104 /* CodexPetWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111111111111111111111203 /* CodexPetWatchApp.swift */; };
 		111111111111111111111105 /* WatchContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111111111111111111111204 /* WatchContentView.swift */; };
 		111111111111111111111106 /* CodexPetWatchSprite in Frameworks */ = {isa = PBXBuildFile; productRef = 111111111111111111111302 /* CodexPetWatchSprite */; };
+		111111111111111111111107 /* PetdexClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111111111111111111111207 /* PetdexClient.swift */; };
+		111111111111111111111108 /* PetdexGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111111111111111111111208 /* PetdexGalleryView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,6 +24,8 @@
 		111111111111111111111204 /* WatchContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchContentView.swift; sourceTree = "<group>"; };
 		111111111111111111111205 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		111111111111111111111206 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		111111111111111111111207 /* PetdexClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetdexClient.swift; sourceTree = "<group>"; };
+		111111111111111111111208 /* PetdexGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetdexGalleryView.swift; sourceTree = "<group>"; };
 		111111111111111111111401 /* Codex Pet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Codex Pet.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		111111111111111111111402 /* Codex Pet Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Codex Pet Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -68,6 +72,8 @@
 			children = (
 				111111111111111111111201 /* CodexPetDemoApp.swift */,
 				111111111111111111111202 /* ContentView.swift */,
+				111111111111111111111207 /* PetdexClient.swift */,
+				111111111111111111111208 /* PetdexGalleryView.swift */,
 				111111111111111111111205 /* Info.plist */,
 			);
 			path = iOS;
@@ -199,6 +205,8 @@
 			files = (
 				111111111111111111111101 /* CodexPetDemoApp.swift in Sources */,
 				111111111111111111111102 /* ContentView.swift in Sources */,
+				111111111111111111111107 /* PetdexClient.swift in Sources */,
+				111111111111111111111108 /* PetdexGalleryView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

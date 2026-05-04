@@ -45,6 +45,7 @@ public struct CodexPetSpriteView: View {
     private let fixedFrameIndex: Int?
     private let resourceName: String
     private let resourceExtension: String
+    private let spriteSheetFileURL: URL?
     private let bundle: Bundle
 
     @State private var frameCache: [Animation: [CGImage]] = [:]
@@ -54,6 +55,7 @@ public struct CodexPetSpriteView: View {
         scale: CGFloat = 1,
         durationScale: TimeInterval = 1,
         fixedFrameIndex: Int? = nil,
+        spriteSheetFileURL: URL? = nil,
         resourceName: String = "spritesheet",
         resourceExtension: String = "png",
         bundle: Bundle? = nil
@@ -62,6 +64,7 @@ public struct CodexPetSpriteView: View {
         self.scale = scale
         self.durationScale = max(durationScale, 0.1)
         self.fixedFrameIndex = fixedFrameIndex
+        self.spriteSheetFileURL = spriteSheetFileURL
         self.resourceName = resourceName
         self.resourceExtension = resourceExtension
         self.bundle = bundle ?? .module
@@ -80,6 +83,9 @@ public struct CodexPetSpriteView: View {
             }
         }
         .onAppear(perform: loadFrames)
+        .onChange(of: spriteSheetFileURL) { _ in
+            loadFrames()
+        }
         .accessibilityHidden(true)
     }
 
@@ -137,6 +143,10 @@ public struct CodexPetSpriteView: View {
     }
 
     private func spriteSheetURL() -> URL? {
+        if let spriteSheetFileURL {
+            return spriteSheetFileURL
+        }
+
         var extensions: [String] = []
         for resourceExtension in [resourceExtension, "png", "webp"] where !extensions.contains(resourceExtension) {
             extensions.append(resourceExtension)
