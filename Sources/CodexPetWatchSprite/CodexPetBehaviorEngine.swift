@@ -27,6 +27,7 @@ public struct CodexPetBehaviorEngine {
     private var focusPoint: CGPoint?
     private var stationaryStreak: Int
     private var movementStreak: Int
+    private var facingAnimation: CodexPetSpriteView.Animation
 
     public init(
         energy: Double = 0.72,
@@ -39,6 +40,7 @@ public struct CodexPetBehaviorEngine {
         self.focusPoint = nil
         self.stationaryStreak = 0
         self.movementStreak = 0
+        self.facingAnimation = .runningRight
     }
 
     public mutating func reset() {
@@ -48,6 +50,7 @@ public struct CodexPetBehaviorEngine {
         focusPoint = nil
         stationaryStreak = 0
         movementStreak = 0
+        facingAnimation = .runningRight
     }
 
     public mutating func nextDecision(
@@ -164,9 +167,22 @@ public struct CodexPetBehaviorEngine {
         energy = max(0, energy - 0.22)
         curiosity = max(0, curiosity - (intent == .explore ? 0.24 : 0.12))
 
+        let horizontalDistance = targetPosition.x - currentPosition.x
         let distance = hypot(targetPosition.x - currentPosition.x, targetPosition.y - currentPosition.y)
+        guard distance >= 6 else {
+            return stationaryDecision(intent: .inspect)
+        }
+
         let duration = min(max(TimeInterval(distance / 95), 0.75), 1.8)
-        let animation = targetPosition.x < currentPosition.x ? CodexPetSpriteView.Animation.runningLeft : .runningRight
+        let animation: CodexPetSpriteView.Animation
+        if horizontalDistance < -4 {
+            animation = .runningLeft
+        } else if horizontalDistance > 4 {
+            animation = .runningRight
+        } else {
+            animation = facingAnimation
+        }
+        facingAnimation = animation
 
         return Decision(
             animation: animation,

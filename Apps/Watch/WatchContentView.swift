@@ -10,11 +10,13 @@ struct WatchContentView: View {
     @State private var behaviorAnimation: CodexPetSpriteView.Animation?
     @State private var behaviorEngine = CodexPetBehaviorEngine()
     @State private var behaviorToken = UUID()
+    @State private var behaviorMotionEndsAt: Date?
+    @State private var behaviorMotionStartedAt: Date?
+    @State private var behaviorMotionStartPosition: CGPoint?
+    @State private var behaviorMotionTargetPosition: CGPoint?
+    @State private var behaviorMotionDuration: TimeInterval?
+    @State private var lastMovementAnimation: CodexPetSpriteView.Animation = .runningRight
     @State private var stationaryBehaviorCount = 0
-    @State private var petHorizontalOffset: CGFloat = 0
-    @State private var petVerticalOffset: CGFloat = 0
-    @State private var lastMovementWasDiagonal: Bool?
-    @State private var repeatedMovementStyleCount = 0
     @State private var showsActionControls = false
     @State private var actionHideToken = UUID()
     @GestureState private var dragState: PetDragState?
@@ -72,10 +74,6 @@ struct WatchContentView: View {
                 )
                     .frame(width: petSize.width, height: petSize.height)
                     .position(currentPetPosition(in: geometry.size, dragState: dragState))
-                    .offset(
-                        x: dragState == nil ? petHorizontalOffset : 0,
-                        y: dragState == nil ? petVerticalOffset : 0
-                    )
                     .gesture(petDragGesture(in: geometry.size))
 
                 VStack {
@@ -141,14 +139,18 @@ struct WatchContentView: View {
 
     private func petDragGesture(in containerSize: CGSize) -> some Gesture {
         DragGesture()
+            .onChanged { _ in
+                cancelBehaviorMotion()
+            }
             .updating($dragState) { value, state, _ in
                 state = PetDragState(
                     translation: value.translation,
-                    animation: value.translation.width < 0 ? .runningLeft : .runningRight
+                    animation: dragAnimation(for: value.translation)
                 )
             }
             .onEnded { value in
                 let currentPosition = currentPetPosition(in: containerSize, dragState: nil)
+                lastMovementAnimation = dragAnimation(for: value.translation)
                 petPosition = clampedPetPosition(
                     CGPoint(
                         x: currentPosition.x + value.translation.width,
@@ -156,6 +158,8 @@ struct WatchContentView: View {
                     ),
                     in: containerSize
                 )
+                behaviorEngine.reset()
+                stationaryBehaviorCount = 0
             }
     }
 
@@ -163,14 +167,21 @@ struct WatchContentView: View {
         guard dragState == nil else {
             return
         }
+        if let behaviorMotionEndsAt, Date() < behaviorMotionEndsAt {
+            return
+        }
 
         let currentPosition = currentPetPosition(in: containerSize, dragState: nil)
         var decision = behaviorEngine.nextDecision(
             currentPosition: currentPosition,
             containerSize: containerSize,
-            petSize: petSize,
-            bottomReservedHeight: 36
+            petSize: movementPetSize(in: containerSize),
+            bottomReservedHeight: bottomReservedHeight
         )
+
+        if decision.isMovement, !isNoticeableWatchMovement(decision, from: currentPosition, in: containerSize) {
+            decision = visibleWatchMovementDecision(from: currentPosition, in: containerSize)
+        }
 
         if decision.isMovement {
             stationaryBehaviorCount = 0
@@ -179,90 +190,35 @@ struct WatchContentView: View {
         }
 
         if stationaryBehaviorCount >= 2 {
-            decision = behaviorEngine.nextMovementDecision(
-                currentPosition: currentPosition,
-                containerSize: containerSize,
-                petSize: petSize,
-                bottomReservedHeight: 36
-            )
+            decision = visibleWatchMovementDecision(from: currentPosition, in: containerSize)
             stationaryBehaviorCount = 0
         }
 
         let token = UUID()
         behaviorToken = token
-        let shouldMoveHorizontally = decision.isMovement
-        let baseBehaviorDuration = shouldMoveHorizontally ? 1.0 : decision.duration
-        let behaviorDuration = baseBehaviorDuration * animationSpeedPreset.movementDurationScale
+        behaviorAnimation = decision.animation
+        let behaviorDuration = decision.duration * animationSpeedPreset.movementDurationScale
 
-        if shouldMoveHorizontally {
-            let nextOffset = nextMovementOffset(in: containerSize)
-            behaviorAnimation = nextOffset.width < petHorizontalOffset ? .runningLeft : .runningRight
-
+        if let nextPosition = decision.targetPosition {
+            lastMovementAnimation = decision.animation
+            startBehaviorMotion(
+                from: currentPosition,
+                to: nextPosition,
+                duration: behaviorDuration
+            )
             withAnimation(.linear(duration: behaviorDuration)) {
-                petHorizontalOffset = nextOffset.width
-                petVerticalOffset = nextOffset.height
+                petPosition = nextPosition
             }
         } else {
-            behaviorAnimation = decision.animation
+            clearBehaviorMotion()
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + behaviorDuration) {
             if dragState == nil, behaviorToken == token {
                 behaviorAnimation = nil
+                clearBehaviorMotion()
             }
         }
-    }
-
-    private func nextMovementOffset(in containerSize: CGSize) -> CGSize {
-        let availableTravel = (containerSize.width - petSize.width) / 2
-        let horizontalTravel = min(54, max(36, availableTravel))
-        let verticalTravel = min(14, max(8, (containerSize.height - petSize.height - 36) / 4))
-        let shouldMoveDiagonally = nextMovementStyleIsDiagonal()
-
-        let nextHorizontalOffset: CGFloat
-        if petHorizontalOffset >= 0 {
-            nextHorizontalOffset = -horizontalTravel
-        } else {
-            nextHorizontalOffset = horizontalTravel
-        }
-
-        let nextVerticalOffset: CGFloat
-        if shouldMoveDiagonally {
-            nextVerticalOffset = nextDiagonalVerticalOffset(verticalTravel: verticalTravel)
-        } else {
-            nextVerticalOffset = 0
-        }
-
-        return CGSize(width: nextHorizontalOffset, height: nextVerticalOffset)
-    }
-
-    private func nextMovementStyleIsDiagonal() -> Bool {
-        let shouldMoveDiagonally: Bool
-
-        if repeatedMovementStyleCount >= 2, let lastMovementWasDiagonal {
-            shouldMoveDiagonally = !lastMovementWasDiagonal
-        } else if lastMovementWasDiagonal == true {
-            shouldMoveDiagonally = Int.random(in: 0..<10) < 4
-        } else {
-            shouldMoveDiagonally = Int.random(in: 0..<10) < 7
-        }
-
-        if lastMovementWasDiagonal == shouldMoveDiagonally {
-            repeatedMovementStyleCount += 1
-        } else {
-            lastMovementWasDiagonal = shouldMoveDiagonally
-            repeatedMovementStyleCount = 1
-        }
-
-        return shouldMoveDiagonally
-    }
-
-    private func nextDiagonalVerticalOffset(verticalTravel: CGFloat) -> CGFloat {
-        let candidates: [CGFloat] = [-verticalTravel, verticalTravel].filter { candidate in
-            abs(candidate - petVerticalOffset) > 1
-        }
-
-        return candidates.randomElement() ?? -petVerticalOffset
     }
 
     private func showActionControlsTemporarily() {
@@ -281,6 +237,108 @@ struct WatchContentView: View {
                 }
             }
         }
+    }
+
+    private var bottomReservedHeight: CGFloat {
+        showsActionControls ? 120 : 36
+    }
+
+    private func visibleWatchMovementDecision(
+        from currentPosition: CGPoint,
+        in containerSize: CGSize
+    ) -> CodexPetBehaviorEngine.Decision {
+        behaviorEngine.nextMovementDecision(
+            currentPosition: currentPosition,
+            containerSize: containerSize,
+            petSize: movementPetSize(in: containerSize),
+            bottomReservedHeight: bottomReservedHeight
+        )
+    }
+
+    private func isNoticeableWatchMovement(
+        _ decision: CodexPetBehaviorEngine.Decision,
+        from currentPosition: CGPoint,
+        in containerSize: CGSize
+    ) -> Bool {
+        guard let targetPosition = decision.targetPosition else {
+            return false
+        }
+
+        let movementPetSize = movementPetSize(in: containerSize)
+        let horizontalRoom = max(0, containerSize.width - movementPetSize.width)
+        let verticalRoom = max(0, containerSize.height - bottomReservedHeight - petSize.height)
+        let horizontalDelta = abs(targetPosition.x - currentPosition.x)
+        let verticalDelta = abs(targetPosition.y - currentPosition.y)
+        let distance = hypot(horizontalDelta, verticalDelta)
+        let minimumHorizontalDelta = min(max(horizontalRoom * 0.3, 12), 30)
+        let minimumDistance = min(max(min(horizontalRoom, verticalRoom) * 0.22, 14), 34)
+
+        return horizontalDelta >= minimumHorizontalDelta || distance >= minimumDistance
+    }
+
+    private func dragAnimation(for translation: CGSize) -> CodexPetSpriteView.Animation {
+        if translation.width < -6 {
+            return .runningLeft
+        } else if translation.width > 6 {
+            return .runningRight
+        } else if abs(translation.height) > 6 {
+            return lastMovementAnimation
+        } else {
+            return selectedAnimation
+        }
+    }
+
+    private func cancelBehaviorMotion() {
+        if let currentBehaviorPosition = currentBehaviorMotionPosition() {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                petPosition = currentBehaviorPosition
+            }
+        }
+
+        behaviorToken = UUID()
+        behaviorAnimation = nil
+        clearBehaviorMotion()
+    }
+
+    private func startBehaviorMotion(
+        from startPosition: CGPoint,
+        to targetPosition: CGPoint,
+        duration: TimeInterval
+    ) {
+        let startedAt = Date()
+        behaviorMotionStartedAt = startedAt
+        behaviorMotionStartPosition = startPosition
+        behaviorMotionTargetPosition = targetPosition
+        behaviorMotionDuration = duration
+        behaviorMotionEndsAt = startedAt.addingTimeInterval(duration)
+    }
+
+    private func clearBehaviorMotion() {
+        behaviorMotionStartedAt = nil
+        behaviorMotionStartPosition = nil
+        behaviorMotionTargetPosition = nil
+        behaviorMotionDuration = nil
+        behaviorMotionEndsAt = nil
+    }
+
+    private func currentBehaviorMotionPosition() -> CGPoint? {
+        guard
+            let behaviorMotionStartedAt,
+            let behaviorMotionStartPosition,
+            let behaviorMotionTargetPosition,
+            let behaviorMotionDuration,
+            behaviorMotionDuration > 0
+        else {
+            return nil
+        }
+
+        let progress = min(max(Date().timeIntervalSince(behaviorMotionStartedAt) / behaviorMotionDuration, 0), 1)
+        return CGPoint(
+            x: behaviorMotionStartPosition.x + (behaviorMotionTargetPosition.x - behaviorMotionStartPosition.x) * progress,
+            y: behaviorMotionStartPosition.y + (behaviorMotionTargetPosition.y - behaviorMotionStartPosition.y) * progress
+        )
     }
 
     private func currentPetPosition(in containerSize: CGSize, dragState: PetDragState?) -> CGPoint {
@@ -303,9 +361,31 @@ struct WatchContentView: View {
     }
 
     private func clampedPetPosition(_ position: CGPoint, in containerSize: CGSize) -> CGPoint {
-        CGPoint(
-            x: clampedCoordinate(position.x, contentLength: petSize.width, containerLength: containerSize.width),
+        let movementPetSize = movementPetSize(in: containerSize)
+
+        return CGPoint(
+            x: clampedCoordinate(position.x, contentLength: movementPetSize.width, containerLength: containerSize.width),
             y: clampedCoordinate(position.y, contentLength: petSize.height, containerLength: containerSize.height)
+        )
+    }
+
+    private func movementPetSize(in containerSize: CGSize) -> CGSize {
+        CGSize(
+            width: max(1, petSize.width - horizontalEdgeAllowance(in: containerSize) * 2),
+            height: petSize.height
+        )
+    }
+
+    private func horizontalEdgeAllowance(in containerSize: CGSize) -> CGFloat {
+        let fullyVisibleHorizontalRoom = max(0, containerSize.width - petSize.width)
+        guard fullyVisibleHorizontalRoom > 0 else {
+            return 0
+        }
+
+        return min(
+            petSize.width * 0.22,
+            max(12, fullyVisibleHorizontalRoom * 0.38),
+            26
         )
     }
 

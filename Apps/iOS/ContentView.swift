@@ -13,6 +13,12 @@ struct ContentView: View {
     @State private var behaviorAnimation: CodexPetSpriteView.Animation?
     @State private var behaviorEngine = CodexPetBehaviorEngine()
     @State private var behaviorToken = UUID()
+    @State private var behaviorMotionEndsAt: Date?
+    @State private var behaviorMotionStartedAt: Date?
+    @State private var behaviorMotionStartPosition: CGPoint?
+    @State private var behaviorMotionTargetPosition: CGPoint?
+    @State private var behaviorMotionDuration: TimeInterval?
+    @State private var lastMovementAnimation: CodexPetSpriteView.Animation = .runningRight
     @State private var petdexPets: [PetdexPet] = []
     @State private var petdexStatusMessage = "Petdex gallery is not loaded."
     @State private var installedPetSlug: String?
@@ -278,6 +284,9 @@ struct ContentView: View {
 
     private func petDragGesture(in containerSize: CGSize) -> some Gesture {
         DragGesture()
+            .onChanged { _ in
+                cancelBehaviorMotion()
+            }
             .updating($dragState) { value, state, _ in
                 state = PetDragState(
                     translation: value.translation,
@@ -286,6 +295,7 @@ struct ContentView: View {
             }
             .onEnded { value in
                 let currentPosition = currentPetPosition(in: containerSize, dragState: nil)
+                lastMovementAnimation = dragAnimation(for: value.translation)
                 petPosition = clampedPetPosition(
                     CGPoint(
                         x: currentPosition.x + value.translation.width,
@@ -293,6 +303,7 @@ struct ContentView: View {
                     ),
                     in: containerSize
                 )
+                behaviorEngine.reset()
             }
     }
 
@@ -316,8 +327,10 @@ struct ContentView: View {
             return .runningLeft
         } else if translation.width > 6 {
             return .runningRight
+        } else if abs(translation.height) > 6 {
+            return lastMovementAnimation
         } else {
-            return .running
+            return selectedAnimation
         }
     }
 
@@ -331,6 +344,9 @@ struct ContentView: View {
 
     private func performIntelligentBehaviorIfNeeded(in containerSize: CGSize) {
         guard isIntelligentBehaviorEnabled, !isFrameFixed, dragState == nil else {
+            return
+        }
+        if let behaviorMotionEndsAt, Date() < behaviorMotionEndsAt {
             return
         }
 
@@ -348,16 +364,78 @@ struct ContentView: View {
         let behaviorDuration = decision.duration * animationSpeedPreset.movementDurationScale
 
         if let nextPosition = decision.targetPosition {
+            lastMovementAnimation = decision.animation
+            startBehaviorMotion(
+                from: currentPosition,
+                to: nextPosition,
+                duration: behaviorDuration
+            )
             withAnimation(.linear(duration: behaviorDuration)) {
                 petPosition = nextPosition
             }
+        } else {
+            clearBehaviorMotion()
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + behaviorDuration) {
             if isIntelligentBehaviorEnabled, dragState == nil, behaviorToken == token {
                 behaviorAnimation = nil
+                clearBehaviorMotion()
             }
         }
+    }
+
+    private func cancelBehaviorMotion() {
+        if let currentBehaviorPosition = currentBehaviorMotionPosition() {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                petPosition = currentBehaviorPosition
+            }
+        }
+
+        behaviorToken = UUID()
+        behaviorAnimation = nil
+        clearBehaviorMotion()
+    }
+
+    private func startBehaviorMotion(
+        from startPosition: CGPoint,
+        to targetPosition: CGPoint,
+        duration: TimeInterval
+    ) {
+        let startedAt = Date()
+        behaviorMotionStartedAt = startedAt
+        behaviorMotionStartPosition = startPosition
+        behaviorMotionTargetPosition = targetPosition
+        behaviorMotionDuration = duration
+        behaviorMotionEndsAt = startedAt.addingTimeInterval(duration)
+    }
+
+    private func clearBehaviorMotion() {
+        behaviorMotionStartedAt = nil
+        behaviorMotionStartPosition = nil
+        behaviorMotionTargetPosition = nil
+        behaviorMotionDuration = nil
+        behaviorMotionEndsAt = nil
+    }
+
+    private func currentBehaviorMotionPosition() -> CGPoint? {
+        guard
+            let behaviorMotionStartedAt,
+            let behaviorMotionStartPosition,
+            let behaviorMotionTargetPosition,
+            let behaviorMotionDuration,
+            behaviorMotionDuration > 0
+        else {
+            return nil
+        }
+
+        let progress = min(max(Date().timeIntervalSince(behaviorMotionStartedAt) / behaviorMotionDuration, 0), 1)
+        return CGPoint(
+            x: behaviorMotionStartPosition.x + (behaviorMotionTargetPosition.x - behaviorMotionStartPosition.x) * progress,
+            y: behaviorMotionStartPosition.y + (behaviorMotionTargetPosition.y - behaviorMotionStartPosition.y) * progress
+        )
     }
 
     private func defaultPetPosition(in containerSize: CGSize) -> CGPoint {
