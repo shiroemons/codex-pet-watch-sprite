@@ -74,12 +74,12 @@ public struct CodexPetSpriteView: View {
         TimelineView(.animation) { timeline in
             if let frame = frame(at: timeline.date) {
                 Image(decorative: frame, scale: 1, orientation: .up)
-                    .interpolation(.none)
-                    .resizable()
-                    .frame(width: Self.cellWidth * scale, height: Self.cellHeight * scale)
+                .interpolation(.none)
+                .resizable()
+                    .frame(width: Self.cellSize.width * scale, height: Self.cellSize.height * scale)
             } else {
                 Color.clear
-                    .frame(width: Self.cellWidth * scale, height: Self.cellHeight * scale)
+                    .frame(width: Self.cellSize.width * scale, height: Self.cellSize.height * scale)
             }
         }
         .onAppear(perform: loadFrames)
@@ -116,30 +116,7 @@ public struct CodexPetSpriteView: View {
     }
 
     private func loadFrames() {
-        guard
-            let url = spriteSheetURL(),
-            let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-            let sheet = CGImageSourceCreateImageAtIndex(source, 0, nil)
-        else {
-            frameCache = [:]
-            return
-        }
-
-        frameCache = Dictionary(uniqueKeysWithValues: Animation.allCases.map { animation in
-            let frames = animation.durations.indices.compactMap { column in
-                let rect = CGRect(
-                    x: CGFloat(column) * Self.cellWidth,
-                    y: CGFloat(animation.rawValue) * Self.cellHeight,
-                    width: Self.cellWidth,
-                    height: Self.cellHeight
-                )
-
-                return sheet.cropping(to: rect)
-            }
-
-            return (animation, frames)
-        }
-        )
+        frameCache = CodexPetSpriteFrameLoader.frames(from: spriteSheetURL()) ?? [:]
     }
 
     private func spriteSheetURL() -> URL? {
@@ -161,8 +138,135 @@ public struct CodexPetSpriteView: View {
         return nil
     }
 
-    private static let cellWidth: CGFloat = 192
-    private static let cellHeight: CGFloat = 208
+    public static let cellSize = CGSize(width: 192, height: 208)
+}
+
+public struct CodexPetSpriteFrameView: View {
+    private let animation: CodexPetSpriteView.Animation
+    private let frameIndex: Int
+    private let scale: CGFloat
+    private let resourceName: String
+    private let resourceExtension: String
+    private let spriteSheetFileURL: URL?
+    private let bundle: Bundle
+
+    public init(
+        animation: CodexPetSpriteView.Animation = .idle,
+        frameIndex: Int = 0,
+        scale: CGFloat = 1,
+        spriteSheetFileURL: URL? = nil,
+        resourceName: String = "spritesheet",
+        resourceExtension: String = "png",
+        bundle: Bundle? = nil
+    ) {
+        self.animation = animation
+        self.frameIndex = frameIndex
+        self.scale = scale
+        self.spriteSheetFileURL = spriteSheetFileURL
+        self.resourceName = resourceName
+        self.resourceExtension = resourceExtension
+        self.bundle = bundle ?? .module
+    }
+
+    public var body: some View {
+        if let frame = CodexPetSpriteFrameLoader.frame(
+            animation: animation,
+            frameIndex: frameIndex,
+            spriteSheetURL: spriteSheetURL()
+        ) {
+            Image(decorative: frame, scale: 1, orientation: .up)
+                .interpolation(.none)
+                .resizable()
+                .frame(
+                    width: CodexPetSpriteView.cellSize.width * scale,
+                    height: CodexPetSpriteView.cellSize.height * scale
+                )
+        } else {
+            Color.clear
+                .frame(
+                    width: CodexPetSpriteView.cellSize.width * scale,
+                    height: CodexPetSpriteView.cellSize.height * scale
+                )
+        }
+    }
+
+    private func spriteSheetURL() -> URL? {
+        if let spriteSheetFileURL {
+            return spriteSheetFileURL
+        }
+
+        var extensions: [String] = []
+        for resourceExtension in [resourceExtension, "png", "webp"] where !extensions.contains(resourceExtension) {
+            extensions.append(resourceExtension)
+        }
+
+        for resourceExtension in extensions {
+            if let url = bundle.url(forResource: resourceName, withExtension: resourceExtension) {
+                return url
+            }
+        }
+
+        return nil
+    }
+}
+
+private enum CodexPetSpriteFrameLoader {
+    static func frames(from spriteSheetURL: URL?) -> [CodexPetSpriteView.Animation: [CGImage]]? {
+        guard
+            let sheet = spriteSheet(from: spriteSheetURL)
+        else {
+            return nil
+        }
+
+        return Dictionary(uniqueKeysWithValues: CodexPetSpriteView.Animation.allCases.map { animation in
+            let frames = animation.durations.indices.compactMap { column in
+                frame(animation: animation, frameIndex: column, spriteSheet: sheet)
+            }
+
+            return (animation, frames)
+        })
+    }
+
+    static func frame(
+        animation: CodexPetSpriteView.Animation,
+        frameIndex: Int,
+        spriteSheetURL: URL?
+    ) -> CGImage? {
+        guard
+            let sheet = spriteSheet(from: spriteSheetURL)
+        else {
+            return nil
+        }
+
+        return frame(animation: animation, frameIndex: frameIndex, spriteSheet: sheet)
+    }
+
+    private static func spriteSheet(from url: URL?) -> CGImage? {
+        guard
+            let url,
+            let source = CGImageSourceCreateWithURL(url as CFURL, nil)
+        else {
+            return nil
+        }
+
+        return CGImageSourceCreateImageAtIndex(source, 0, nil)
+    }
+
+    private static func frame(
+        animation: CodexPetSpriteView.Animation,
+        frameIndex: Int,
+        spriteSheet: CGImage
+    ) -> CGImage? {
+        let index = min(max(frameIndex, 0), animation.frameCount - 1)
+        let rect = CGRect(
+            x: CGFloat(index) * CodexPetSpriteView.cellSize.width,
+            y: CGFloat(animation.rawValue) * CodexPetSpriteView.cellSize.height,
+            width: CodexPetSpriteView.cellSize.width,
+            height: CodexPetSpriteView.cellSize.height
+        )
+
+        return spriteSheet.cropping(to: rect)
+    }
 }
 
 struct CodexPetSpriteView_Previews: PreviewProvider {

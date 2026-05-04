@@ -15,7 +15,53 @@
 		111111111111111111111106 /* CodexPetWatchSprite in Frameworks */ = {isa = PBXBuildFile; productRef = 111111111111111111111302 /* CodexPetWatchSprite */; };
 		111111111111111111111107 /* PetdexClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111111111111111111111207 /* PetdexClient.swift */; };
 		111111111111111111111108 /* PetdexGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111111111111111111111208 /* PetdexGalleryView.swift */; };
+		111111111111111111111109 /* CodexPetWatchWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111111111111111111111209 /* CodexPetWatchWidget.swift */; };
+		111111111111111111111110 /* Codex Pet Watch Widget Extension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 111111111111111111111403 /* Codex Pet Watch Widget Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		111111111111111111111111 /* CodexPetWatchSprite in Frameworks */ = {isa = PBXBuildFile; productRef = 111111111111111111111304 /* CodexPetWatchSprite */; };
+		111111111111111111111112 /* Codex Pet Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 111111111111111111111402 /* Codex Pet Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		111111111111111111111752 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 111111111111111111111001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 111111111111111111111703;
+			remoteInfo = "Codex Pet Watch Widget Extension";
+		};
+		111111111111111111111753 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 111111111111111111111001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 111111111111111111111702;
+			remoteInfo = "Codex Pet Watch App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		111111111111111111111505 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				111111111111111111111110 /* Codex Pet Watch Widget Extension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		111111111111111111111506 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				111111111111111111111112 /* Codex Pet Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		111111111111111111111201 /* CodexPetDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexPetDemoApp.swift; sourceTree = "<group>"; };
@@ -26,8 +72,11 @@
 		111111111111111111111206 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		111111111111111111111207 /* PetdexClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetdexClient.swift; sourceTree = "<group>"; };
 		111111111111111111111208 /* PetdexGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetdexGalleryView.swift; sourceTree = "<group>"; };
+		111111111111111111111209 /* CodexPetWatchWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexPetWatchWidget.swift; sourceTree = "<group>"; };
+		111111111111111111111210 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		111111111111111111111401 /* Codex Pet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Codex Pet.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		111111111111111111111402 /* Codex Pet Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Codex Pet Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		111111111111111111111403 /* Codex Pet Watch Widget Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Codex Pet Watch Widget Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -47,6 +96,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		111111111111111111111503 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				111111111111111111111111 /* CodexPetWatchSprite in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -63,6 +120,7 @@
 			children = (
 				111111111111111111111603 /* iOS */,
 				111111111111111111111605 /* Watch */,
+				111111111111111111111606 /* WatchWidget */,
 			);
 			path = Apps;
 			sourceTree = "<group>";
@@ -84,6 +142,7 @@
 			children = (
 				111111111111111111111401 /* Codex Pet.app */,
 				111111111111111111111402 /* Codex Pet Watch App.app */,
+				111111111111111111111403 /* Codex Pet Watch Widget Extension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -98,6 +157,15 @@
 			path = Watch;
 			sourceTree = "<group>";
 		};
+		111111111111111111111606 /* WatchWidget */ = {
+			isa = PBXGroup;
+			children = (
+				111111111111111111111209 /* CodexPetWatchWidget.swift */,
+				111111111111111111111210 /* Info.plist */,
+			);
+			path = WatchWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -108,10 +176,12 @@
 				111111111111111111111901 /* Sources */,
 				111111111111111111111501 /* Frameworks */,
 				111111111111111111111902 /* Resources */,
+				111111111111111111111506 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				111111111111111111111754 /* PBXTargetDependency */,
 			);
 			name = "Codex Pet";
 			packageProductDependencies = (
@@ -128,10 +198,12 @@
 				111111111111111111111903 /* Sources */,
 				111111111111111111111502 /* Frameworks */,
 				111111111111111111111904 /* Resources */,
+				111111111111111111111505 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				111111111111111111111751 /* PBXTargetDependency */,
 			);
 			name = "Codex Pet Watch App";
 			packageProductDependencies = (
@@ -140,6 +212,26 @@
 			productName = "Codex Pet Watch App";
 			productReference = 111111111111111111111402 /* Codex Pet Watch App.app */;
 			productType = "com.apple.product-type.application";
+		};
+		111111111111111111111703 /* Codex Pet Watch Widget Extension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 111111111111111111111804 /* Build configuration list for PBXNativeTarget "Codex Pet Watch Widget Extension" */;
+			buildPhases = (
+				111111111111111111111906 /* Sources */,
+				111111111111111111111503 /* Frameworks */,
+				111111111111111111111905 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Codex Pet Watch Widget Extension";
+			packageProductDependencies = (
+				111111111111111111111304 /* CodexPetWatchSprite */,
+			);
+			productName = "Codex Pet Watch Widget Extension";
+			productReference = 111111111111111111111403 /* Codex Pet Watch Widget Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -155,6 +247,9 @@
 						CreatedOnToolsVersion = 26.4.1;
 					};
 					111111111111111111111702 = {
+						CreatedOnToolsVersion = 26.4.1;
+					};
+					111111111111111111111703 = {
 						CreatedOnToolsVersion = 26.4.1;
 					};
 				};
@@ -177,6 +272,7 @@
 			targets = (
 				111111111111111111111701 /* Codex Pet */,
 				111111111111111111111702 /* Codex Pet Watch App */,
+				111111111111111111111703 /* Codex Pet Watch Widget Extension */,
 			);
 		};
 /* End PBXProject section */
@@ -190,6 +286,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		111111111111111111111904 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		111111111111111111111905 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -219,7 +322,28 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		111111111111111111111906 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				111111111111111111111109 /* CodexPetWatchWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		111111111111111111111751 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 111111111111111111111703 /* Codex Pet Watch Widget Extension */;
+			targetProxy = 111111111111111111111752 /* PBXContainerItemProxy */;
+		};
+		111111111111111111111754 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 111111111111111111111702 /* Codex Pet Watch App */;
+			targetProxy = 111111111111111111111753 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		111111111111111111112001 /* Debug */ = {
@@ -345,7 +469,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = U4Y9MKZ4GZ;
 				ENABLE_PREVIEWS = YES;
@@ -374,7 +498,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = U4Y9MKZ4GZ;
 				ENABLE_PREVIEWS = YES;
@@ -403,11 +527,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = U4Y9MKZ4GZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Apps/Watch/Info.plist;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.shiroemons.CodexPetDemo;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -430,11 +555,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = U4Y9MKZ4GZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Apps/Watch/Info.plist;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.shiroemons.CodexPetDemo;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -449,6 +575,62 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				WATCHOS_DEPLOYMENT_TARGET = 8.0;
+			};
+			name = Release;
+		};
+		111111111111111111112007 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = U4Y9MKZ4GZ;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Apps/WatchWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shiroemons.CodexPetDemo.watchkitapp.CodexPetWatchWidgetExtension;
+				PRODUCT_NAME = "Codex Pet Watch Widget Extension";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 9.0;
+			};
+			name = Debug;
+		};
+		111111111111111111112008 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = U4Y9MKZ4GZ;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Apps/WatchWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shiroemons.CodexPetDemo.watchkitapp.CodexPetWatchWidgetExtension;
+				PRODUCT_NAME = "Codex Pet Watch Widget Extension";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 9.0;
 			};
 			name = Release;
 		};
@@ -482,6 +664,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		111111111111111111111804 /* Build configuration list for PBXNativeTarget "Codex Pet Watch Widget Extension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				111111111111111111112007 /* Debug */,
+				111111111111111111112008 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -497,6 +688,10 @@
 			productName = CodexPetWatchSprite;
 		};
 		111111111111111111111302 /* CodexPetWatchSprite */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CodexPetWatchSprite;
+		};
+		111111111111111111111304 /* CodexPetWatchSprite */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = CodexPetWatchSprite;
 		};
