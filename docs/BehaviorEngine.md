@@ -91,20 +91,22 @@ public struct Decision: Equatable {
 
 `nextMovementDecision` は UI の「移動」操作向けで、通常の重み付けを使わず、見た目に分かりやすい横断移動を返します。
 
-## Overview
+## 全体像
+
+この図は、画面側の timer やボタン操作から行動エンジンが呼ばれ、返ってきた `Decision` が sprite 表示と位置アニメーションに反映されるまでの関係を示します。エンジンは SwiftUI の状態管理を直接持たず、「次に何をするか」だけを決めます。
 
 ```mermaid
 flowchart LR
-    UI["iOS / Watch UI<br/>timer or manual action"] --> Engine["CodexPetBehaviorEngine"]
-    Engine --> Needs["Internal needs<br/>energy / curiosity / sociability"]
-    Engine --> Bounds["Movement bounds<br/>container / pet / reserved area"]
-    Engine --> Intent["Intent selection"]
-    Intent --> Decision["Decision<br/>animation / targetPosition / duration"]
-    Decision --> Sprite["CodexPetSpriteView"]
-    Decision --> Motion["SwiftUI position animation"]
+    UI["iOS / Watch の画面<br/>timer またはボタン操作"] --> Engine["行動エンジン<br/>CodexPetBehaviorEngine"]
+    Engine --> Needs["内部状態<br/>energy / curiosity / sociability"]
+    Engine --> Bounds["移動できる範囲<br/>画面サイズ / pet サイズ / 下部予約領域"]
+    Engine --> Intent["行動の意図を選ぶ"]
+    Intent --> Decision["判断結果<br/>アニメーション / 移動先 / 秒数"]
+    Decision --> Sprite["sprite 表示<br/>CodexPetSpriteView"]
+    Decision --> Motion["位置移動<br/>SwiftUI animation"]
 ```
 
-## Decision Flow
+## 判断フロー
 
 `nextDecision` の流れは次の通りです。
 
@@ -117,26 +119,28 @@ flowchart LR
 7. それ以外は重み付き抽選で intent を選ぶ
 8. intent を移動または静止の `Decision` に変換する
 
+この図では、pet が画面端に近すぎる場合は他の行動より先に中央付近へ戻し、それ以外のときだけ重み付きで行動を選ぶ流れを表しています。
+
 ```mermaid
 flowchart TD
-    Start["nextDecision(...)"] --> Bounds["movementBounds(...)"]
-    Bounds --> BoundsValid{"bounds.width > 1<br/>and bounds.height > 1"}
-    BoundsValid -->|No| Rest["stationaryDecision(.rest)"]
-    BoundsValid -->|Yes| Needs["updateNeeds()"]
-    Needs --> Clamp["Clamp currentPosition into bounds"]
-    Clamp --> Edge["edgePressure(for:in:)"]
-    Edge --> TooClose{"edgePressure<br/>greater than 0.82"}
-    TooClose -->|Yes| ReturnMove["movementDecision<br/>to center-biased point"]
-    TooClose -->|No| Choose["chooseIntent(edgePressure:)"]
-    Choose --> Intent{"Intent"}
-    Intent -->|returnToComfortZone| ReturnMove
-    Intent -->|explore| Explore["Move to focusPoint<br/>or random point"]
-    Intent -->|inspect| Inspect["Move to nearby point"]
-    Intent -->|rest / greet / celebrate| Stationary["stationaryDecision(intent:)"]
-    Explore --> MoveDecision["Decision with targetPosition"]
+    Start["次の行動を決める<br/>nextDecision"] --> Bounds["移動できる範囲を計算"]
+    Bounds --> BoundsValid{"十分に動ける<br/>範囲がある？"}
+    BoundsValid -->|いいえ| Rest["休憩系の静止行動"]
+    BoundsValid -->|はい| Needs["内部状態を少し回復"]
+    Needs --> Clamp["現在位置を範囲内に丸める"]
+    Clamp --> Edge["画面端への近さを計算"]
+    Edge --> TooClose{"端に<br/>近すぎる？"}
+    TooClose -->|はい| ReturnMove["中央付近へ戻る移動"]
+    TooClose -->|いいえ| Choose["重み付きで行動を選ぶ"]
+    Choose --> Intent{"選ばれた行動"}
+    Intent -->|中央へ戻る| ReturnMove
+    Intent -->|探索する| Explore["目標地点へ移動<br/>focusPoint またはランダム地点"]
+    Intent -->|近場を見る| Inspect["近くの地点へ短く移動"]
+    Intent -->|休む / 挨拶 / ジャンプ| Stationary["その場でアニメーション"]
+    Explore --> MoveDecision["移動先ありの Decision"]
     Inspect --> MoveDecision
     ReturnMove --> MoveDecision
-    Stationary --> StillDecision["Decision without targetPosition"]
+    Stationary --> StillDecision["移動先なしの Decision"]
     Rest --> StillDecision
 ```
 
@@ -198,28 +202,30 @@ flowchart TD
 
 静止が 3 回以上続くと `curiosity` が追加で回復し、次回以降に動きやすくなります。
 
-## State Updates
+## 状態更新
+
+この図は、1 回の判断で `energy`、`curiosity`、`sociability`、連続移動回数、連続静止回数がどう変わるかを示します。基本的には、時間経過で少し回復し、移動や挨拶などの行動で対応する状態を消費します。
 
 ```mermaid
 flowchart LR
-    Tick["Every decision tick"] --> Recover["Recover needs<br/>energy + 0.04...0.09<br/>curiosity + 0.03...0.08<br/>sociability + 0.02...0.06"]
-    Recover --> Path{"Decision type"}
+    Tick["判断タイミング"] --> Recover["状態が少し回復<br/>energy + 0.04...0.09<br/>curiosity + 0.03...0.08<br/>sociability + 0.02...0.06"]
+    Recover --> Path{"行動の種類"}
 
-    Path -->|Movement| MoveState["stationaryStreak = 0<br/>movementStreak += 1<br/>energy -= 0.22<br/>curiosity -= 0.24 for explore<br/>curiosity -= 0.12 otherwise"]
-    MoveState --> MoveAnim{"Horizontal delta"}
-    MoveAnim -->|less than -4pt| Left["runningLeft"]
-    MoveAnim -->|greater than 4pt| Right["runningRight"]
-    MoveAnim -->|near vertical| Facing["previous facingAnimation"]
+    Path -->|移動する| MoveState["静止の連続回数を 0 にする<br/>移動の連続回数を増やす<br/>energy を消費<br/>curiosity を消費"]
+    MoveState --> MoveAnim{"横方向の<br/>移動量"}
+    MoveAnim -->|左へ大きく移動| Left["左向きで走る<br/>runningLeft"]
+    MoveAnim -->|右へ大きく移動| Right["右向きで走る<br/>runningRight"]
+    MoveAnim -->|横移動が小さい| Facing["直前の向きを維持"]
 
-    Path -->|Stationary| StillState["stationaryStreak += 1<br/>movementStreak = 0"]
-    StillState --> StillIntent{"Intent"}
-    StillIntent -->|rest| RestState["energy += 0.18<br/>waiting or idle"]
-    StillIntent -->|greet| GreetState["sociability -= 0.35<br/>waving"]
-    StillIntent -->|celebrate| CelebrateState["energy -= 0.16<br/>jumping"]
-    StillIntent -->|inspect| InspectState["curiosity -= 0.14<br/>review"]
-    StillState --> Curious{"stationaryStreak >= 3"}
-    Curious -->|Yes| CuriosityBoost["curiosity += 0.22"]
-    Curious -->|No| Done["Return Decision"]
+    Path -->|その場にいる| StillState["静止の連続回数を増やす<br/>移動の連続回数を 0 にする"]
+    StillState --> StillIntent{"その場の行動"}
+    StillIntent -->|休む| RestState["energy が回復<br/>waiting または idle"]
+    StillIntent -->|挨拶する| GreetState["sociability を消費<br/>waving"]
+    StillIntent -->|ジャンプする| CelebrateState["energy を消費<br/>jumping"]
+    StillIntent -->|確認する| InspectState["curiosity を消費<br/>review"]
+    StillState --> Curious{"静止が<br/>3 回以上続いた？"}
+    Curious -->|はい| CuriosityBoost["curiosity を追加回復"]
+    Curious -->|いいえ| Done["Decision を返す"]
 ```
 
 ## UI Integration
