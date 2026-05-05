@@ -88,7 +88,7 @@ public struct CodexPetBehaviorEngine {
         case .returnToComfortZone:
             return movementDecision(
                 from: position,
-                to: biasedPoint(around: center, in: bounds, radius: 0.25),
+                to: comfortPoint(from: position, toward: center, in: bounds),
                 intent: intent
             )
         case .explore:
@@ -291,13 +291,28 @@ public struct CodexPetBehaviorEngine {
     }
 
     private func nearbyPoint(from position: CGPoint, in bounds: CGRect) -> CGPoint {
-        let step = min(max(min(bounds.width, bounds.height) * CGFloat.random(in: 0.18...0.34), 24), 96)
+        let longestAxis = max(bounds.width, bounds.height)
+        let step = min(max(longestAxis * CGFloat.random(in: 0.16...0.32), 32), 220)
         let angle = CGFloat.random(in: 0...(2 * .pi))
 
         return clamp(
             CGPoint(
                 x: position.x + cos(angle) * step,
                 y: position.y + sin(angle) * step
+            ),
+            to: bounds
+        )
+    }
+
+    private func comfortPoint(from position: CGPoint, toward center: CGPoint, in bounds: CGRect) -> CGPoint {
+        let travelFraction = CGFloat.random(in: 0.45...0.72)
+        let jitterX = bounds.width * CGFloat.random(in: -0.08...0.08)
+        let jitterY = bounds.height * CGFloat.random(in: -0.08...0.08)
+
+        return clamp(
+            CGPoint(
+                x: position.x + (center.x - position.x) * travelFraction + jitterX,
+                y: position.y + (center.y - position.y) * travelFraction + jitterY
             ),
             to: bounds
         )
